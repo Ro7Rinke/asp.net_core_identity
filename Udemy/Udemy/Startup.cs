@@ -30,6 +30,8 @@ namespace Udemy
             services.AddIdentityCore<UserModel>(options => { });
 
             services.AddScoped<IUserStore<UserModel>, UserStore>();
+
+            services.AddAuthentication("cookies").AddCookie("cookies", options => options.LoginPath = "/Home/Login");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -43,6 +45,9 @@ namespace Udemy
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+
+            app.UseAuthentication();
+
             app.UseStaticFiles();
 
             app.UseRouting();

@@ -12,7 +12,7 @@ using Udemy.Models;
 
 namespace Udemy.Store
 {
-    public class UserStore : IUserStore<UserModel>
+    public class UserStore : IUserStore<UserModel>, IUserPasswordStore<UserModel>
     {
         public async Task<IdentityResult> CreateAsync(UserModel user, CancellationToken cancellationToken)
         {
@@ -144,6 +144,22 @@ namespace Udemy.Store
             }
 
             return IdentityResult.Success;
+        }
+
+        public Task SetPasswordHashAsync(UserModel user, string passwordHash, CancellationToken cancellationToken)
+        {
+            user.PasswordHash = passwordHash;
+            return Task.CompletedTask;
+        }
+
+        public Task<string> GetPasswordHashAsync(UserModel user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.PasswordHash);
+        }
+
+        public Task<bool> HasPasswordAsync(UserModel user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.PasswordHash != null);
         }
     }
 }
