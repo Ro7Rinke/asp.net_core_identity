@@ -18,9 +18,9 @@ namespace Udemy.Controllers
 
         private readonly ILogger<HomeController> _logger;
 
-        private readonly UserManager<UserModel> _userManager;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public HomeController(ILogger<HomeController> logger, UserManager<UserModel> userManager) 
+        public HomeController(ILogger<HomeController> logger, UserManager<IdentityUser> userManager) 
         {
             _logger = logger;
             _userManager = userManager;
@@ -74,7 +74,7 @@ namespace Udemy.Controllers
 
                 if(user == null)
                 {
-                    user = new UserModel
+                    user = new IdentityUser
                     {
                         Id = Guid.NewGuid().ToString(),
                         UserName = model.UserName
