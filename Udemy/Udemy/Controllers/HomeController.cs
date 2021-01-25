@@ -49,28 +49,35 @@ namespace Udemy.Controllers
         {
             if (ModelState.IsValid)
             {
-                //var user = await _userManager.FindByNameAsync(model.UserName);
+                var user = await _userManager.FindByNameAsync(model.UserName);
 
-                //if(user != null && await _userManager.CheckPasswordAsync(user, model.Password))
-                //{
-                //    var identity = new ClaimsIdentity("Identity.Applicaton");
-                //    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
-                //    identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
-
-                //    var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
-
-                //    await HttpContext.SignInAsync("Identity.Application", principal);
-
-                //    return RedirectToAction("About");
-                //}
-
-                var signInResult = await _signInManager.PasswordSignInAsync(
-                    model.UserName, model.Password, false, false);
-
-                if (signInResult.Succeeded)
+                if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
                 {
+
+                    if(!await _userManager.IsEmailConfirmedAsync(user))
+                    {
+                        ModelState.AddModelError("", "Invalid Email");
+                        return View();
+                    }
+
+                    var identity = new ClaimsIdentity("Identity.Applicaton");
+                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
+                    identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
+
+                    var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+                    await HttpContext.SignInAsync("Identity.Application", principal);
+
                     return RedirectToAction("About");
                 }
+
+                //var signInResult = await _signInManager.PasswordSignInAsync(
+                //    model.UserName, model.Password, false, false);
+
+                //if (signInResult.Succeeded)
+                //{
+                //    return RedirectToAction("About");
+                //}
 
                 ModelState.AddModelError("", "Invalid password!");
             }
@@ -96,12 +103,20 @@ namespace Udemy.Controllers
                     user = new UserModel
                     {
                         Id = Guid.NewGuid().ToString(),
-                        UserName = model.UserName
+                        UserName = model.UserName,
+                        Email = model.UserName
                     };
 
                     var result = await _userManager.CreateAsync(user, model.Password);
 
+                    if(result.Succeeded)
+                    {
+                        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                        var confirmationEmail = Url.Action("ConfirmEmailAddress", "Home",
+                            new { token = token, email = user.Email}, Request.Scheme);
 
+                        System.IO.File.WriteAllText("confirmationEmail.txt", confirmationEmail);
+                    }
                 }
                 return View("Success");
             }
@@ -117,6 +132,25 @@ namespace Udemy.Controllers
         [HttpGet]
         public IActionResult Success()
         {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ConfirmEmailAddress(string token, string email)
+        {
+
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if(user != null)
+            {
+                var result = await _userManager.ConfirmEmailAsync(user, token);
+
+                if (result.Succeeded)
+                {
+                    return View("Success");
+                }
+            }
+
             return View();
         }
 

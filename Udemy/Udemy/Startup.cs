@@ -44,7 +44,10 @@ namespace Udemy
                 sql => sql.MigrationsAssembly(migrationAssembly))
             );
 
-            services.AddIdentity<UserModel, IdentityRole>(options => { })
+            services.AddIdentity<UserModel, IdentityRole>(options => 
+            {
+                options.SignIn.RequireConfirmedEmail = true;
+            })
                 .AddEntityFrameworkStores<UserDbContext>()
                 .AddDefaultTokenProviders();
 
