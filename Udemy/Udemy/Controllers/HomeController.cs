@@ -18,12 +18,17 @@ namespace Udemy.Controllers
 
         private readonly ILogger<HomeController> _logger;
 
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<UserModel> _userManager;
 
-        public HomeController(ILogger<HomeController> logger, UserManager<IdentityUser> userManager) 
+
+        private readonly IUserClaimsPrincipalFactory<UserModel> _userClaimsPrincipalFactory;
+
+        public HomeController(ILogger<HomeController> logger, UserManager<UserModel> userManager,
+            IUserClaimsPrincipalFactory<UserModel> userClaimsPrincipalFactory) 
         {
             _logger = logger;
             _userManager = userManager;
+            _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         }
 
         public IActionResult Index()
@@ -45,11 +50,13 @@ namespace Udemy.Controllers
 
                 if(user != null && await _userManager.CheckPasswordAsync(user, model.Password))
                 {
-                    var identity = new ClaimsIdentity("cookies");
+                    var identity = new ClaimsIdentity("Identity.Applicaton");
                     identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
                     identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
 
-                    await HttpContext.SignInAsync("cookies", new ClaimsPrincipal(identity));
+                    var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+                    await HttpContext.SignInAsync("Identity.Application", principal);
 
                     return RedirectToAction("About");
                 }
@@ -74,7 +81,7 @@ namespace Udemy.Controllers
 
                 if(user == null)
                 {
-                    user = new IdentityUser
+                    user = new UserModel
                     {
                         Id = Guid.NewGuid().ToString(),
                         UserName = model.UserName

@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Udemy.Claims;
+using Udemy.Context;
 using Udemy.Models;
 using Udemy.Store;
 
@@ -37,17 +39,19 @@ namespace Udemy
                 .GetTypeInfo().Assembly
                 .GetName().Name;
 
-            services.AddDbContext<IdentityDbContext>( 
+            services.AddDbContext<UserDbContext>( 
                 opt => opt.UseSqlServer(connectionString, 
                 sql => sql.MigrationsAssembly(migrationAssembly))
             );
 
-            services.AddIdentityCore<IdentityUser>(options => { });
+            services.AddIdentity<UserModel, IdentityRole>(options => { })
+                .AddEntityFrameworkStores<UserDbContext>();
 
-            services.AddScoped<IUserStore<IdentityUser>, 
-                UserOnlyStore<IdentityUser, IdentityDbContext>>();
+            services.AddScoped<IUserClaimsPrincipalFactory<UserModel>,
+                UserClaims>();
 
-            services.AddAuthentication("cookies").AddCookie("cookies", options => options.LoginPath = "/Home/Login");
+            services.ConfigureApplicationCookie(options => 
+                options.LoginPath = "/Home/Login");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
