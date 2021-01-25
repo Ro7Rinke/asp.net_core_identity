@@ -1,0 +1,1 @@
+http://localhost:50170/Home/ResetPassword?token=CfDJ8FehUQ045r5GtDkA2tjL5QNcyT1Sk8%2B%2BG%2FwNH%2BocERNkKOo%2BRrgFNO4D5ij6pXXuxFLjZ92hO4EoRq%2BUNalwBMpG6IGpas79945ryGfJqxdUHIrxph997y3%2B2EAJGKGTMDsaQJPA7kI%2B%2FGH733xNLrQDg2x4%2BBcSkjcSUtrm%2F%2Fy8OQypqbmHrsb7js0%2F94KHQeG53dH0xErjdTudbc%2FCplYDwLsz4iA41dwS6buJgtf9&email=fulano@fulano.com

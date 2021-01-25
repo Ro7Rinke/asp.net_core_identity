@@ -45,10 +45,14 @@ namespace Udemy
             );
 
             services.AddIdentity<UserModel, IdentityRole>(options => { })
-                .AddEntityFrameworkStores<UserDbContext>();
+                .AddEntityFrameworkStores<UserDbContext>()
+                .AddDefaultTokenProviders();
 
             services.AddScoped<IUserClaimsPrincipalFactory<UserModel>,
                 UserClaims>();
+
+            services.Configure<DataProtectionTokenProviderOptions>(
+                options => options.TokenLifespan = TimeSpan.FromHours(3));
 
             services.ConfigureApplicationCookie(options => 
                 options.LoginPath = "/Home/Login");

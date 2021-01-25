@@ -22,13 +22,16 @@ namespace Udemy.Controllers
 
 
         private readonly IUserClaimsPrincipalFactory<UserModel> _userClaimsPrincipalFactory;
+        private readonly SignInManager<UserModel> _signInManager;
 
         public HomeController(ILogger<HomeController> logger, UserManager<UserModel> userManager,
-            IUserClaimsPrincipalFactory<UserModel> userClaimsPrincipalFactory) 
+            IUserClaimsPrincipalFactory<UserModel> userClaimsPrincipalFactory,
+            SignInManager<UserModel> signInManager) 
         {
             _logger = logger;
             _userManager = userManager;
             _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
+            _signInManager = signInManager;
         }
 
         public IActionResult Index()
@@ -46,20 +49,29 @@ namespace Udemy.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = await _userManager.FindByNameAsync(model.UserName);
+                //var user = await _userManager.FindByNameAsync(model.UserName);
 
-                if(user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+                //if(user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+                //{
+                //    var identity = new ClaimsIdentity("Identity.Applicaton");
+                //    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
+                //    identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
+
+                //    var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+                //    await HttpContext.SignInAsync("Identity.Application", principal);
+
+                //    return RedirectToAction("About");
+                //}
+
+                var signInResult = await _signInManager.PasswordSignInAsync(
+                    model.UserName, model.Password, false, false);
+
+                if (signInResult.Succeeded)
                 {
-                    var identity = new ClaimsIdentity("Identity.Applicaton");
-                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
-                    identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
-
-                    var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
-
-                    await HttpContext.SignInAsync("Identity.Application", principal);
-
                     return RedirectToAction("About");
                 }
+
                 ModelState.AddModelError("", "Invalid password!");
             }
 
@@ -105,6 +117,78 @@ namespace Udemy.Controllers
         [HttpGet]
         public IActionResult Success()
         {
+            return View();
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> ResetPassword(string token, string email)
+        {
+            return View(new ResetPasswordModel { Token = token, Email = email });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+
+                if (user != null)
+                {
+                    var result = await _userManager.ResetPasswordAsync(
+                        user, model.Token, model.Password);
+
+                    if (!result.Succeeded)
+                    {
+                        foreach (var error in result.Errors)
+                        {
+                            ModelState.AddModelError("", error.Description);
+                        }
+                        return View();
+                    }
+                    return View("Success");
+
+                }
+
+                ModelState.AddModelError("", "Invalid Request");
+            }
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+
+                if(user != null)
+                {
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+                    var resetURL = Url.Action("ResetPassword", "Home", 
+                        new {
+                            token = token,
+                            email = model.Email
+                        }, Request.Scheme);
+
+                    System.IO.File.WriteAllText("resetLink.txt", resetURL);
+
+                    return View("Success");
+                }
+                else
+                {
+                    return View();
+                }
+            }
+
             return View();
         }
 
