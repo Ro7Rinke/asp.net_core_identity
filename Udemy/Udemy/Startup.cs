@@ -39,8 +39,8 @@ namespace Udemy
                 .GetTypeInfo().Assembly
                 .GetName().Name;
 
-            services.AddDbContext<UserDbContext>( 
-                opt => opt.UseSqlServer(connectionString, 
+            services.AddDbContext<UserDbContext>(
+                opt => opt.UseSqlServer(connectionString,
                 sql => sql.MigrationsAssembly(migrationAssembly))
             );
 
