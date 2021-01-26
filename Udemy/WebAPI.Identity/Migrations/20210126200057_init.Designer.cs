@@ -10,7 +10,7 @@ using WebAPI.Rep;
 namespace WebAPI.Identity.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20210126191209_init")]
+    [Migration("20210126200057_init")]
     partial class init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
