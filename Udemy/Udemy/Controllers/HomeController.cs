@@ -51,24 +51,49 @@ namespace Udemy.Controllers
             {
                 var user = await _userManager.FindByNameAsync(model.UserName);
 
-                if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+                if (user != null && !await _userManager.IsLockedOutAsync(user))
                 {
-
-                    if(!await _userManager.IsEmailConfirmedAsync(user))
+                    if(await _userManager.CheckPasswordAsync(user, model.Password))
                     {
-                        ModelState.AddModelError("", "Invalid Email");
-                        return View();
+
+                        if(!await _userManager.IsEmailConfirmedAsync(user))
+                        {
+                            ModelState.AddModelError("", "Invalid Email");
+                            return View();
+                        }
+
+                        await _userManager.ResetAccessFailedCountAsync(user);
+
+                        if(await _userManager.GetTwoFactorEnabledAsync(user)){
+                            var validator = await _userManager.GetValidTwoFactorProvidersAsync(user);
+
+                            if (validator.Contains("Email"))
+                            {
+                                var token = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
+                                System.IO.File.WriteAllText("twoFormFactor", token);
+
+                                await HttpContext.SignInAsync(IdentityConstants.TwoFactorUserIdScheme, 
+                                    Store2FA(user.Id, "Email"));
+
+                                return RedirectToAction("TwoFactor");
+                            }
+                        }
+
+                        var identity = new ClaimsIdentity(IdentityConstants.ApplicationScheme);
+                        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
+                        identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
+
+                        var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+                        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal);
+
+                        return RedirectToAction("About");
                     }
+                    await _userManager.AccessFailedAsync(user);
 
-                    var identity = new ClaimsIdentity("Identity.Applicaton");
-                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
-                    identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
+                    if(await _userManager.IsLockedOutAsync(user)){
 
-                    var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
-
-                    await HttpContext.SignInAsync("Identity.Application", principal);
-
-                    return RedirectToAction("About");
+                    }
                 }
 
                 //var signInResult = await _signInManager.PasswordSignInAsync(
@@ -83,6 +108,18 @@ namespace Udemy.Controllers
             }
 
             return View();
+        }
+
+        public ClaimsPrincipal Store2FA(string userId, string provider)
+        {
+            var identity = new ClaimsIdentity(new List<Claim>
+            {
+                new Claim("sub", userId),
+                new Claim("amr", provider)
+            }, IdentityConstants.TwoFactorUserIdScheme);
+
+            return new ClaimsPrincipal(identity);
+
         }
 
         [HttpGet]
@@ -116,6 +153,15 @@ namespace Udemy.Controllers
                             new { token = token, email = user.Email}, Request.Scheme);
 
                         System.IO.File.WriteAllText("confirmationEmail.txt", confirmationEmail);
+                    }
+                    else
+                    {
+                        foreach (var error in result.Errors) 
+                        {
+                            ModelState.AddModelError("", error.Description);
+                        }
+
+                        return View();
                     }
                 }
                 return View("Success");
@@ -221,6 +267,54 @@ namespace Udemy.Controllers
                 {
                     return View();
                 }
+            }
+
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult TwoFactor()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TwoFactor(TwoFactorModel model)
+        {
+            var result = await HttpContext.AuthenticateAsync(IdentityConstants.TwoFactorUserIdScheme);
+
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "Expired Token");
+                return View();
+            }
+
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByIdAsync(result.Principal.FindFirstValue("sub"));
+
+                if(user != null)
+                {
+                    var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+                        user, result.Principal.FindFirstValue("amr"), model.Token);
+
+                    if (isValid)
+                    {
+                        await HttpContext.SignOutAsync(IdentityConstants.TwoFactorUserIdScheme);
+
+                        var claimsPrincipal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+                        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, claimsPrincipal);
+
+                        return RedirectToAction("About");
+                    }
+
+                    ModelState.AddModelError("", "Invalid Token");
+                    return View();
+                }
+
+                ModelState.AddModelError("", "Invalid Request");
+                return View();
             }
 
             return View();

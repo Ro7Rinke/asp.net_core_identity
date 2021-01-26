@@ -44,12 +44,20 @@ namespace Udemy
                 sql => sql.MigrationsAssembly(migrationAssembly))
             );
 
-            services.AddIdentity<UserModel, IdentityRole>(options => 
+            services.AddIdentity<UserModel, IdentityRole>(options =>
             {
                 options.SignIn.RequireConfirmedEmail = true;
+
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequireUppercase = false;
+
+                options.Lockout.MaxFailedAccessAttempts = 3;
+                options.Lockout.AllowedForNewUsers = true;
             })
                 .AddEntityFrameworkStores<UserDbContext>()
-                .AddDefaultTokenProviders();
+                .AddDefaultTokenProviders()
+                .AddPasswordValidator<PasswordValidator<UserModel>>();
 
             services.AddScoped<IUserClaimsPrincipalFactory<UserModel>,
                 UserClaims>();
