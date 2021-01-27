@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -36,22 +37,51 @@ namespace WebAPI.Identity
             _signInManager = signInManager;
             _mapper = mapper;
         }
-        // GET: api/<UserController>
+        // GET: api/User
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IActionResult Get()
         {
-            return new string[] { "value1", "value2" };
+            return Ok(new UserDto());
         }
 
-        // GET api/<UserController>/5
+        // POST api/User/5
         [HttpPost("Login")]
-        public async Task<IActionResult> Login()
+        [AllowAnonymous]
+        public async Task<IActionResult> Login(UserLoginDto model)
         {
-            
+            try
+            {
+                var user = await _userManager.FindByNameAsync(model.UserName);
+
+                var result = await _signInManager
+                        .CheckPasswordSignInAsync(user, model.Password, false);
+
+                if (result.Succeeded)
+                {
+                    var appUser = await _userManager.Users
+                            .FirstOrDefaultAsync(u => u.NormalizedUserName == user.UserName.ToUpper());
+
+                    var userToReturn = _mapper.Map<UserLoginDto>(appUser);
+
+                    return Ok(new {
+                        token = GenerateJwt(appUser).Result,
+                        user = appUser
+
+                    });
+                }
+                return Unauthorized();
+            }
+            catch (Exception ex)
+            {
+
+                return this.StatusCode(StatusCodes.Status500InternalServerError,
+                    $"ERROR {ex.Message}");
+            }
         }
 
         // POST api/<UserController>
         [HttpPost("Register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register( UserDto model )
         {
             try
@@ -65,7 +95,8 @@ namespace WebAPI.Identity
                     user = new User
                     {
                         UserName = model.UserName,
-                        Email = model.UserName
+                        Email = model.UserName,
+                        FullName = model.FullName
                     };
 
                     var result = await _userManager.CreateAsync(user, model.Password);
@@ -77,10 +108,11 @@ namespace WebAPI.Identity
                             .FirstOrDefaultAsync(u => u.NormalizedUserName == user.UserName.ToUpper());
 
                         var token = GenerateJwt(appUser).Result;
-                        var confirmationEmail = Url.Action("ConfirmEmailAddress", "Home",
-                            new { token = token, email = user.Email }, Request.Scheme);
+                        return Ok(token);
+                        //var confirmationEmail = Url.Action("ConfirmEmailAddress", "Home",
+                        //    new { token = token, email = user.Email }, Request.Scheme);
 
-                        System.IO.File.WriteAllText("confirmationEmail.txt", confirmationEmail);
+                        //System.IO.File.WriteAllText("confirmationEmail.txt", confirmationEmail);
                     }
                 } 
                 return Unauthorized();

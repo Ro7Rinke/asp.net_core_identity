@@ -5,10 +5,8 @@ using System.Threading.Tasks;
 
 namespace WebAPI.Identity.Dto
 {
-    public class UserLoginDto
+    public class RoleDto
     {
-        public string UserName { get; set; }
-
-        public string Password { get; set; }
+        public string Name { get; set; }
     }
 }

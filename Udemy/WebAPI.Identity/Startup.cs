@@ -1,8 +1,11 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +19,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using WebAPI.Domain;
+using WebAPI.Identity.Helper;
 using WebAPI.Rep;
 
 namespace WebAPI.Identity
@@ -45,9 +49,9 @@ namespace WebAPI.Identity
                 sql => sql.MigrationsAssembly(migrationAssembly))
             );
 
-            services.AddIdentity<User, Role>(options =>
+            services.AddIdentityCore<User>(options =>
             {
-                options.SignIn.RequireConfirmedEmail = true;
+                //options.SignIn.RequireConfirmedEmail = true;
 
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireDigit = false;
@@ -56,6 +60,7 @@ namespace WebAPI.Identity
                 options.Lockout.MaxFailedAccessAttempts = 3;
                 options.Lockout.AllowedForNewUsers = true;
             })
+                .AddRoles<Role>()
                 .AddEntityFrameworkStores<Context>()
                 .AddRoleValidator<RoleValidator<Role>>()
                 .AddRoleManager<RoleManager<Role>>()
@@ -75,9 +80,21 @@ namespace WebAPI.Identity
                     };
                 });
 
-            services.AddControllers()
-                .AddNewtonsoftJson(opt => 
+            services.AddControllers(options => {
+                var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+                options.Filters.Add(new AuthorizeFilter(policy));
+            }).AddNewtonsoftJson(opt => 
                     opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+
+            var mappingConfig = new MapperConfiguration(mc => {
+                mc.AddProfile(new AutoMapperProfile());
+            });
+
+            IMapper mapper = mappingConfig.CreateMapper();
+
+            services.AddSingleton(mapper);
 
             services.AddCors();
         }
@@ -91,7 +108,9 @@ namespace WebAPI.Identity
             }
 
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-            
+
+            app.UseAuthentication();
+
             app.UseRouting();
 
             app.UseAuthorization();
