@@ -44,10 +44,10 @@ namespace WebAPI.Identity
         }
 
         // GET api/<UserController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login()
         {
-            return "value";
+            
         }
 
         // POST api/<UserController>
