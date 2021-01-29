@@ -24,11 +24,13 @@
                     <th>Category Name</th>
                 </tr>
             </thead>
+            @foreach (var category in Model)
+            {
+                <tr>
+                    <th>@category.Name</th>
+                </tr>
+            }
         </table>
-        @foreach (var category in Model)
-        {
-
-        }
     }
 
 </div>
