@@ -1,6 +1,22 @@
 const fs = require('fs')
+const geohasher = require('ngeohash')
 
 const main = async () => {
+    
+
+    const lat = -21.9743783494791
+    const lon = -46.76374677428059
+
+    const hash = geohasher.encode(lat, lon, 14)
+    const neighbors_hashs = geohasher.neighbors(hash)
+
+    console.log([hash, ...neighbors_hashs])
+
+
+    
+    return
+    
+    
     const georesp = JSON.parse(fs.readFileSync('./geocoderesponse.json'))
     let postal_code = extractPostalCode(georesp)
 

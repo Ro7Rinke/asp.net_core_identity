@@ -4,28 +4,23 @@ using System.Text.Json;
 
 namespace Maps
 {
-    //ray : -22.551476151406902, -47.4341736
-    //eu ; -21.9743783494791, -46.76374677428059
     class Program
     {
         static void Main(string[] args)
         {
-            double latitudeStart = -21.9743783494791;
 
-            double longitudeStart = -46.76374677428059;
+            Coordinate start = new Coordinate(-21.978968, -46.810287);
 
-            double latitudeEnd = -22.551476151406902;
-
-            double longitudeEnd = -47.4341736;
+            Coordinate end = new Coordinate(-22.978968, -47.810287);
 
             Console.Write("Kilometers: ");
-            Console.WriteLine(Coordinates.Distance(latitudeStart, longitudeStart, latitudeEnd, longitudeEnd, Coordinates._kilometers));
+            Console.WriteLine(CoordinatesCalc.Distance(start, end, CoordinatesCalc._kilometers));
 
             Console.Write("Nautical Miles: ");
-            Console.WriteLine(Coordinates.Distance(latitudeStart, longitudeStart, latitudeEnd, longitudeEnd, Coordinates._nauticalMiles));
+            Console.WriteLine(CoordinatesCalc.Distance(start, end, CoordinatesCalc._nauticalMiles));
 
             Console.Write("Miles: ");
-            Console.WriteLine(Coordinates.Distance(latitudeStart, longitudeStart, latitudeEnd, longitudeEnd));
+            Console.WriteLine(CoordinatesCalc.Distance(start, end));
 
             return;
             string path = "C:/Users/Desenvolvimento/Documents/asp.net_core_identity/Node/geocoderesponse.json";
